@@ -8,9 +8,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.jonahseguin.drink.CommandService;
 import com.jonahseguin.drink.Drink;
+import com.jonahseguin.drink.command.DrinkCommandService;
+import com.jonahseguin.drink.parametric.BindingContainer;
 import lombok.Getter;
 import org.alexdev.unlimitednametags.api.UNTAPI;
 import org.alexdev.unlimitednametags.commands.MainCommand;
+import org.alexdev.unlimitednametags.commands.SafePlayerProvider;
 import org.alexdev.unlimitednametags.config.ConfigManager;
 import org.alexdev.unlimitednametags.hook.*;
 import org.alexdev.unlimitednametags.hook.hat.HatHook;
@@ -23,6 +26,7 @@ import org.alexdev.unlimitednametags.packet.PacketManager;
 import org.alexdev.unlimitednametags.placeholders.PlaceholderManager;
 import org.alexdev.unlimitednametags.vanish.VanishManager;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
@@ -266,6 +270,7 @@ public final class UnlimitedNameTags extends JavaPlugin {
     private void loadCommands() {
         final CommandService drink = Drink.get(this);
 
+        replacePlayerProvider(drink);
         drink.register(new MainCommand(this), "unt", "unlimitednametags");
         drink.registerCommands();
     }
@@ -291,6 +296,19 @@ public final class UnlimitedNameTags extends JavaPlugin {
             hooks.values().forEach(hook -> map.put(hook.getClass().getSimpleName(), 1));
             return map;
         }));
+    }
+
+    private void replacePlayerProvider(CommandService drink) {
+        if (!(drink instanceof DrinkCommandService commandService)) {
+            return;
+        }
+
+        final BindingContainer<Player> bindings = commandService.getBindingsFor(Player.class);
+        if (bindings != null) {
+            bindings.getBindings().removeIf(binding -> binding.getAnnotations().isEmpty());
+        }
+
+        commandService.bind(Player.class).toProvider(new SafePlayerProvider(this));
     }
 
     public <H extends Hook> Optional<H> getHook(@NotNull Class<H> hookType) {

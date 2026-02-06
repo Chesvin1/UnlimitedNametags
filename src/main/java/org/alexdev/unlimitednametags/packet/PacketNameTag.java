@@ -515,8 +515,9 @@ public class PacketNameTag {
             }
         });
 
+        perPlayerEntity.getEntities().values().forEach(WrapperEntity::remove);
         perPlayerEntity.getEntities().clear();
-
+        
         plugin.getPacketManager().removePassenger(entityId);
         relationalCache.clear();
     }
